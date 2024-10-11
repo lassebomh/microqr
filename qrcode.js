@@ -2518,80 +2518,46 @@ function createSymbol(data, version, errorCorrectionLevel, maskPattern) {
 }
 
 /**
- * QR Code
- *
- * @param {String | Array} data                 Input data
- * @param {Object} options                      Optional configurations
- * @param {Number} options.version              QR Code version
- * @param {String} options.errorCorrectionLevel Error correction level
- * @param {Function} options.toSJISFunc         Helper func to convert utf8 to sjis
- */
-export function create(data, options) {
-  if (typeof data === "undefined" || data === "") {
-    throw new Error("No input text");
-  }
-
-  let errorCorrectionLevel = ECLevel.M;
-  let version;
-  let mask;
-
-  if (typeof options !== "undefined") {
-    // Use higher error correction level as default
-    errorCorrectionLevel = ECLevel.from(
-      options.errorCorrectionLevel,
-      ECLevel.M
-    );
-    version = Version.from(options.version);
-    mask = MaskPattern.from(options.maskPattern);
-
-    if (options.toSJISFunc) {
-      Utils.setToSJISFunction(options.toSJISFunc);
-    }
-  }
-
-  return createSymbol(data, version, errorCorrectionLevel, mask);
-}
-
-/**
- * @description
- * Converts a Boolean 2D matrix into bitmap base64 URL.
- *
- * If the image appears blurry, add "image-rendering: pixelated;" to its CSS.
- *
- * @param {boolean[][]} bmat
+ * @param {string} data
  * @param {[number, number, number]} col1
  * @param {[number, number, number]} col0
  * @returns {string}
  */
 
-export function bmatToUrl(
-  bmat,
-  col1 = [0xff, 0xff, 0xff],
-  col0 = [0x00, 0x00, 0x00]
+export function createQRCode(
+  input,
+  col1 = [0x00, 0x00, 0x00],
+  col0 = [0xff, 0xff, 0xff]
 ) {
-  const [width, height] = [bmat[0].length, bmat.length];
+  if (typeof input === "undefined" || input === "") {
+    throw new Error("No input text");
+  }
 
-  const BYTES_PER_ROW = Math.ceil(width / 8 / 4) * 4;
+  const symbol = createSymbol(input, undefined, ECLevel.M, undefined);
+
+  let { data, size } = symbol.modules;
+
+  const BYTES_PER_ROW = Math.ceil(size / 8 / 4) * 4;
 
   const HEADER_SIZE = 16;
   const PIXELS_OFFSET = HEADER_SIZE + 22;
 
-  const bmp = new Uint8Array(PIXELS_OFFSET + BYTES_PER_ROW * height);
+  const bmp = new Uint8Array(PIXELS_OFFSET + BYTES_PER_ROW * size);
 
   bmp.set([66, 77, bmp.length]); // signature + file size
   bmp.set([PIXELS_OFFSET], 10); // offset to pixel data
   bmp.set([HEADER_SIZE], 14); // header size
-  bmp.set([width], 18); // image width
-  bmp.set([height], 22); // image height
+  bmp.set([size], 18); // image width
+  bmp.set([size], 22); // image height
   bmp.set([1], 26); // color planes
   bmp.set([1], 28); // bits per pixel
   bmp.set([col1[2], col1[1], col1[0]], 34); // color 1
   bmp.set([col0[2], col0[1], col0[0]], 30); // color 0
 
-  for (let y = 0; y < height; y++) {
+  for (let y = 0; y < size; y++) {
     const row = new Uint8Array(BYTES_PER_ROW);
-    for (let x = 0; x < width; x++) {
-      const value = bmat[y][x];
+    for (let x = 0; x < size; x++) {
+      const value = data[y * size + x];
       if (!value) continue;
       row[Math.floor(x / 8)] |= value << (7 - (x % 8));
     }

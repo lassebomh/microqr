@@ -1,25 +1,28 @@
-import { create, bmatToUrl } from "./qrcode.js";
+import { createQRCode } from "./qrcode.js";
 
-console.log("hello");
-
-let qrCode = create(
-  "https://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps://google.comhttps",
-  {}
-);
-
-let bitmap = [];
-
-for (let i = 0; i < qrCode.modules.size; i++) {
-  let row = [];
-
-  for (let ii = 0; ii < qrCode.modules.size; ii++) {
-    row.push(qrCode.modules.data[i * qrCode.modules.size + ii]);
-  }
-
-  bitmap.push(row);
+function getRandomChars(length) {
+  return String.fromCharCode.apply(
+    null,
+    crypto.getRandomValues(new Uint8Array(length)).map((v) => (v % 94) + 32)
+  );
 }
 
 const img = document.getElementById("qrcode");
 img.style.imageRendering = "pixelated";
 
-img.src = bmatToUrl(bitmap, [0, 0, 0], [0, 100, 255]);
+window.start = () => {
+  const t = performance.now();
+
+  let dataurl;
+
+  while (performance.now() - t < 2000) {
+    dataurl = createQRCode(
+      getRandomChars(Math.floor(Math.random() * 2331) + 1)
+    );
+  }
+
+  img.src = dataurl;
+};
+
+img.src = createQRCode("https://google.com");
+// setTimeout(start, 50);
