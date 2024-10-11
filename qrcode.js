@@ -478,10 +478,10 @@ function setupVersionInfo(matrix, version) {
   }
 }
 
-function setupFormatInfo(matrix, errorCorrectionLevel, maskPattern) {
+function setupFormatInfo(matrix, errorCorrectionLevel) {
   const size = matrix.size;
 
-  const data = (errorCorrectionLevel.bit << 3) | maskPattern;
+  const data = (errorCorrectionLevel.bit << 3) | 2;
   let d = data << 10;
 
   while (Utils.getBCHDigit(d) - G15_BCH >= 0) {
@@ -652,7 +652,7 @@ function createCodewords(bitBuffer, version, errorCorrectionLevel) {
   return data;
 }
 
-function createSymbol(data, version, errorCorrectionLevel, maskPattern) {
+function createSymbol(data, version, errorCorrectionLevel) {
   let segments = [new ByteData(data)];
 
   const bestVersion = getBestVersionForData(segments, errorCorrectionLevel);
@@ -719,7 +719,7 @@ function createSymbol(data, version, errorCorrectionLevel, maskPattern) {
 
   setupAlignmentPattern(modules, version);
 
-  setupFormatInfo(modules, errorCorrectionLevel, 0);
+  setupFormatInfo(modules, errorCorrectionLevel);
 
   if (version >= 7) {
     setupVersionInfo(modules, version);
@@ -733,8 +733,6 @@ function createSymbol(data, version, errorCorrectionLevel, maskPattern) {
       modules.xor(row, col, col % 3 === 0);
     }
   }
-
-  setupFormatInfo(modules, errorCorrectionLevel, 2);
 
   return {
     modules: modules,
@@ -754,7 +752,7 @@ export function createQRCode(
     throw new Error("No input text");
   }
 
-  const symbol = createSymbol(input, undefined, ECLevel.M, undefined);
+  const symbol = createSymbol(input, undefined, ECLevel.M);
 
   let { data, size } = symbol.modules;
 
