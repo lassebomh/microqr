@@ -11,18 +11,28 @@ const img = document.getElementById("qrcode");
 img.style.imageRendering = "pixelated";
 
 window.start = () => {
-  const t = performance.now();
+  console.clear();
+  const tests = 150;
 
-  let dataurl;
+  // for (let t = 0; t < tests; t++) {
+  //   let string = getRandomChars(Math.floor(((t + 1) / tests) * 2331));
+  //   localStorage.setItem("i" + t, string);
+  //   localStorage.setItem("o" + t, createQRCode(string));
+  // }
 
-  while (performance.now() - t < 2000) {
-    dataurl = createQRCode(
-      getRandomChars(Math.floor(Math.random() * 2331) + 1)
-    );
+  for (let t = 0; t < tests; t++) {
+    const string = localStorage.getItem("i" + t);
+    try {
+      if (localStorage.getItem("o" + t) !== createQRCode(string)) {
+        throw new Error(`test ${t} didn't match`);
+      }
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  img.src = dataurl;
+  console.log("tests done");
 };
 
-img.src = createQRCode("https://google.com");
-// setTimeout(start, 50);
+img.src = localStorage.getItem("o" + 0);
+setTimeout(start, 50);
