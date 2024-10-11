@@ -405,11 +405,6 @@ const LOG_TABLE = new Uint8Array(256);
   }
 })();
 
-GF.log = function log(n) {
-  if (n < 1) throw new Error("log(" + n + ")");
-  return LOG_TABLE[n];
-};
-
 GF.exp = function exp(n) {
   return EXP_TABLE[n];
 };
@@ -546,16 +541,6 @@ function getBestVersionForData(segments, errorCorrectionLevel) {
   return undefined;
 }
 
-function getEncodedBits(version) {
-  let d = version << 12;
-
-  while (Utils.getBCHDigit(d) - G18_BCH >= 0) {
-    d ^= G18 << (Utils.getBCHDigit(d) - G18_BCH);
-  }
-
-  return (version << 12) | d;
-}
-
 const G15 =
   (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);
 const G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
@@ -586,51 +571,6 @@ ByteData.prototype.write = function (bitBuffer) {
     bitBuffer.put(this.data[i], 8);
   }
 };
-
-function setupFinderPattern(matrix, version) {
-  const size = matrix.size;
-
-  const pos = [
-    [0, 0],
-
-    [size - 7, 0],
-
-    [0, size - 7],
-  ];
-
-  for (let i = 0; i < pos.length; i++) {
-    const row = pos[i][0];
-    const col = pos[i][1];
-
-    for (let r = -1; r <= 7; r++) {
-      if (row + r <= -1 || size <= row + r) continue;
-
-      for (let c = -1; c <= 7; c++) {
-        if (col + c <= -1 || size <= col + c) continue;
-
-        if (
-          (r >= 0 && r <= 6 && (c === 0 || c === 6)) ||
-          (c >= 0 && c <= 6 && (r === 0 || r === 6)) ||
-          (r >= 2 && r <= 4 && c >= 2 && c <= 4)
-        ) {
-          matrix.set(row + r, col + c, true, true);
-        } else {
-          matrix.set(row + r, col + c, false, true);
-        }
-      }
-    }
-  }
-}
-
-function setupTimingPattern(matrix) {
-  const size = matrix.size;
-
-  for (let r = 8; r < size - 8; r++) {
-    const value = r % 2 === 0;
-    matrix.set(r, 6, value, true);
-    matrix.set(6, r, value, true);
-  }
-}
 
 function setupAlignmentPattern(matrix, version) {
   const coords = [];
@@ -695,7 +635,15 @@ function setupAlignmentPattern(matrix, version) {
 
 function setupVersionInfo(matrix, version) {
   const size = matrix.size;
-  const bits = getEncodedBits(version);
+
+  let d = version << 12;
+
+  while (Utils.getBCHDigit(d) - G18_BCH >= 0) {
+    d ^= G18 << (Utils.getBCHDigit(d) - G18_BCH);
+  }
+
+  const bits = (version << 12) | d;
+
   let row, col, mod;
 
   for (let i = 0; i < 18; i++) {
@@ -908,8 +856,45 @@ function createSymbol(data, version, errorCorrectionLevel, maskPattern) {
   const moduleCount = Utils.getSymbolSize(version);
   const modules = new BitMatrix(moduleCount);
 
-  setupFinderPattern(modules, version);
-  setupTimingPattern(modules);
+  const size = modules.size;
+
+  const pos = [
+    [0, 0],
+
+    [size - 7, 0],
+
+    [0, size - 7],
+  ];
+
+  for (let i = 0; i < pos.length; i++) {
+    const row = pos[i][0];
+    const col = pos[i][1];
+
+    for (let r = -1; r <= 7; r++) {
+      if (row + r <= -1 || size <= row + r) continue;
+
+      for (let c = -1; c <= 7; c++) {
+        if (col + c <= -1 || size <= col + c) continue;
+
+        if (
+          (r >= 0 && r <= 6 && (c === 0 || c === 6)) ||
+          (c >= 0 && c <= 6 && (r === 0 || r === 6)) ||
+          (r >= 2 && r <= 4 && c >= 2 && c <= 4)
+        ) {
+          modules.set(row + r, col + c, true, true);
+        } else {
+          modules.set(row + r, col + c, false, true);
+        }
+      }
+    }
+  }
+
+  for (let r = 8; r < size - 8; r++) {
+    const value = r % 2 === 0;
+    modules.set(r, 6, value, true);
+    modules.set(6, r, value, true);
+  }
+
   setupAlignmentPattern(modules, version);
 
   setupFormatInfo(modules, errorCorrectionLevel, 0);
