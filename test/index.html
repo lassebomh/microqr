@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: #333;
+      }
+      img {
+        width: 80vmin;
+        position: absolute;
+      }
+    </style>
+  </head>
+  <body>
+    <img id="qrcode" />
+  </body>
+  <script type="module">
+    import {
+      createQRCode,
+      createSymbol,
+      createSymbolDataURL,
+    } from "../qrcode.js";
+    import { getImageData, getRandomChars } from "./utils.js";
+
+    const img = document.getElementById("qrcode");
+    img.style.imageRendering = "pixelated";
+
+    const run_tests = async () => {
+      performance.mark("total");
+
+      const n = 100;
+      const max = 2331;
+
+      let misses = 0;
+      let fails = 0;
+
+      for (let i = 0; i < n; i++) {
+        const length = Math.floor((i / n) * max) + 1;
+
+        let string = getRandomChars(length);
+        let url = createQRCode(string);
+
+        let imageData = await getImageData(url);
+
+        let result = jsQR(imageData.data, imageData.width, imageData.height);
+
+        img.src = url;
+
+        if (result == null) {
+          console.warn(`Missed ${i}`);
+          misses++;
+        } else if (result.data !== string) {
+          fails++;
+          console.error(`Failed ${i}!`, fails);
+        } else {
+          console.log(`%cPassed ${i}!`, "color: lightgreen;");
+        }
+      }
+
+      console.log("");
+      console.log("");
+
+      if (misses) {
+        console.warn("Total misses:", misses);
+      } else {
+        console.log("%cNo misses!", "color: lightgreen;");
+      }
+      if (fails) {
+        console.error("Total fails:", fails);
+      } else {
+        console.log("%cNo fails!", "color: lightgreen; font-weight: bold;");
+      }
+    };
+
+    run_tests();
+  </script>
+</html>

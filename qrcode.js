@@ -28,12 +28,10 @@ Utils.getBCHDigit = function (data) {
   return digit;
 };
 
-const ECLevel = {};
-
-ECLevel.L = { bit: 1 };
-ECLevel.M = { bit: 0 };
-ECLevel.Q = { bit: 3 };
-ECLevel.H = { bit: 2 };
+const ECLevelL = { bit: 1 };
+const ECLevelM = { bit: 0 };
+const ECLevelQ = { bit: 3 };
+const ECLevelH = { bit: 2 };
 
 class BitBuffer {
   constructor() {
@@ -129,13 +127,13 @@ const EC_CODEWORDS_TABLE = [
 
 ECCode.getBlocksCount = function getBlocksCount(version, errorCorrectionLevel) {
   switch (errorCorrectionLevel) {
-    case ECLevel.L:
+    case ECLevelL:
       return EC_BLOCKS_TABLE[(version - 1) * 4 + 0];
-    case ECLevel.M:
+    case ECLevelM:
       return EC_BLOCKS_TABLE[(version - 1) * 4 + 1];
-    case ECLevel.Q:
+    case ECLevelQ:
       return EC_BLOCKS_TABLE[(version - 1) * 4 + 2];
-    case ECLevel.H:
+    case ECLevelH:
       return EC_BLOCKS_TABLE[(version - 1) * 4 + 3];
     default:
       return undefined;
@@ -147,13 +145,13 @@ ECCode.getTotalCodewordsCount = function getTotalCodewordsCount(
   errorCorrectionLevel
 ) {
   switch (errorCorrectionLevel) {
-    case ECLevel.L:
+    case ECLevelL:
       return EC_CODEWORDS_TABLE[(version - 1) * 4 + 0];
-    case ECLevel.M:
+    case ECLevelM:
       return EC_CODEWORDS_TABLE[(version - 1) * 4 + 1];
-    case ECLevel.Q:
+    case ECLevelQ:
       return EC_CODEWORDS_TABLE[(version - 1) * 4 + 2];
-    case ECLevel.H:
+    case ECLevelH:
       return EC_CODEWORDS_TABLE[(version - 1) * 4 + 3];
     default:
       return undefined;
@@ -586,7 +584,7 @@ function createCodewords(bitBuffer, version, errorCorrectionLevel) {
   return data;
 }
 
-export function createSymbol(data, version, errorCorrectionLevel = ECLevel.M) {
+export function createSymbol(data, version, errorCorrectionLevel = ECLevelM) {
   let segment = new ByteData(data);
 
   const bestVersion = getBestVersionForData(segment, errorCorrectionLevel);
@@ -616,9 +614,7 @@ export function createSymbol(data, version, errorCorrectionLevel = ECLevel.M) {
 
   const pos = [
     [0, 0],
-
     [size - 7, 0],
-
     [0, size - 7],
   ];
 
@@ -677,18 +673,22 @@ export function createSymbol(data, version, errorCorrectionLevel = ECLevel.M) {
   };
 }
 
-export function createQRCode(
-  input,
-  col1 = [0x00, 0x00, 0x00],
-  col0 = [0xff, 0xff, 0xff]
-) {
-  if (typeof input === "undefined" || input === "") {
-    throw new Error("No input text");
-  }
-
-  const symbol = createSymbol(input);
-
+export function createSymbolDataURL(symbol, col1, col0, border = 1) {
   let { data, size } = symbol.modules;
+
+  if (border > 0) {
+    let borderSize = size + border * 2;
+    let borderData = new Uint8Array(borderSize ** 2).fill(0);
+
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        borderData[x + border + (y + border) * borderSize] = data[x + y * size];
+      }
+    }
+
+    data = borderData;
+    size = borderSize;
+  }
 
   const BYTES_PER_ROW = Math.ceil(size / 8 / 4) * 4;
 
@@ -717,8 +717,17 @@ export function createQRCode(
     bmp.set(row, bmp.length - BYTES_PER_ROW * (y + 1));
   }
 
-  return [
-    `data:image/bmp;base64,${btoa(String.fromCharCode.apply(null, bmp))}`,
-    symbol,
-  ];
+  return `data:image/bmp;base64,${btoa(String.fromCharCode.apply(null, bmp))}`;
+}
+
+export function createQRCode(
+  input,
+  col1 = [0x00, 0x00, 0x00],
+  col0 = [0xff, 0xff, 0xff]
+) {
+  if (typeof input === "undefined" || input === "") {
+    throw new Error("No input text");
+  }
+  const symbol = createSymbol(input);
+  return createSymbolDataURL(symbol, col1, col0);
 }
