@@ -38,7 +38,7 @@ async function getImageData(url) {
         (height + 2) * scale
       );
 
-      res([imageData, canvas.toDataURL()]);
+      res(imageData);
     };
   });
 }
@@ -46,22 +46,26 @@ async function getImageData(url) {
 const img = document.getElementById("qrcode");
 img.style.imageRendering = "pixelated";
 
-(async () => {
+const run_tests = async () => {
+  performance.mark("total");
+
   const n = 100;
   const max = 2331;
+
   let misses = 0;
   let fails = 0;
+
   for (let i = 0; i < n; i++) {
     const length = Math.floor((i / n) * max) + 1;
 
-    let string = getRandomChars(length);
+    let string = getRandomChars(2000);
     let [url, symbol] = createQRCode(string);
 
-    let [imageData, dataURL] = await getImageData(url);
+    let imageData = await getImageData(url);
 
     let result = jsQR(imageData.data, imageData.width, imageData.height);
 
-    img.src = url;
+    // img.src = url;
 
     if (result == null) {
       console.warn(`Missed ${i}`);
@@ -73,6 +77,8 @@ img.style.imageRendering = "pixelated";
       console.log(`%cPassed ${i}!`, "color: lightgreen;");
     }
   }
+
+  console.log(performance.measure("total").duration / n);
 
   console.log("---------------------");
 
@@ -86,4 +92,6 @@ img.style.imageRendering = "pixelated";
   } else {
     console.log("%cNo fails!", "color: lightgreen; font-weight: bold;");
   }
-})();
+};
+
+run_tests();

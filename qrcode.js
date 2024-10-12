@@ -35,75 +35,28 @@ ECLevel.M = { bit: 0 };
 ECLevel.Q = { bit: 3 };
 ECLevel.H = { bit: 2 };
 
-function fromString(string) {
-  if (typeof string !== "string") {
-    throw new Error("Param is not a string");
+class BitBuffer {
+  constructor() {
+    this.buffer = [];
+    this.length = 0;
   }
 
-  const lcStr = string.toLowerCase();
-
-  switch (lcStr) {
-    case "l":
-    case "low":
-      return ECLevel.L;
-
-    case "m":
-    case "medium":
-      return ECLevel.M;
-
-    case "q":
-    case "quartile":
-      return ECLevel.Q;
-
-    case "h":
-    case "high":
-      return ECLevel.H;
-
-    default:
-      throw new Error("Unknown EC Level: " + string);
-  }
-}
-
-ECLevel.isValid = function isValid(level) {
-  return (
-    level && typeof level.bit !== "undefined" && level.bit >= 0 && level.bit < 4
-  );
-};
-
-ECLevel.from = function from(value, defaultValue) {
-  if (ECLevel.isValid(value)) {
-    return value;
-  }
-
-  try {
-    return fromString(value);
-  } catch (e) {
-    return defaultValue;
-  }
-};
-
-function BitBuffer() {
-  this.buffer = [];
-  this.length = 0;
-}
-
-BitBuffer.prototype = {
-  get: function (index) {
+  get(index) {
     const bufIndex = Math.floor(index / 8);
     return ((this.buffer[bufIndex] >>> (7 - (index % 8))) & 1) === 1;
-  },
+  }
 
-  put: function (num, length) {
+  put(num, length) {
     for (let i = 0; i < length; i++) {
       this.putBit(((num >>> (length - i - 1)) & 1) === 1);
     }
-  },
+  }
 
-  getLengthInBits: function () {
+  getLengthInBits() {
     return this.length;
-  },
+  }
 
-  putBit: function (bit) {
+  putBit(bit) {
     const bufIndex = Math.floor(this.length / 8);
     if (this.buffer.length <= bufIndex) {
       this.buffer.push(0);
@@ -114,36 +67,38 @@ BitBuffer.prototype = {
     }
 
     this.length++;
-  },
-};
-
-function BitMatrix(size) {
-  if (!size || size < 1) {
-    throw new Error("BitMatrix size must be defined and greater than 0");
   }
-
-  this.size = size;
-  this.data = new Uint8Array(size * size);
-  this.reservedBit = new Uint8Array(size * size);
 }
 
-BitMatrix.prototype.set = function (row, col, value, reserved) {
-  const index = row * this.size + col;
-  this.data[index] = value;
-  if (reserved) this.reservedBit[index] = true;
-};
+class BitMatrix {
+  constructor(size) {
+    if (!size || size < 1) {
+      throw new Error("BitMatrix size must be defined and greater than 0");
+    }
 
-BitMatrix.prototype.get = function (row, col) {
-  return this.data[row * this.size + col];
-};
+    this.size = size;
+    this.data = new Uint8Array(size * size);
+    this.reservedBit = new Uint8Array(size * size);
+  }
 
-BitMatrix.prototype.xor = function (row, col, value) {
-  this.data[row * this.size + col] ^= value;
-};
+  set(row, col, value, reserved) {
+    const index = row * this.size + col;
+    this.data[index] = value;
+    if (reserved) this.reservedBit[index] = true;
+  }
 
-BitMatrix.prototype.isReserved = function (row, col) {
-  return this.reservedBit[row * this.size + col];
-};
+  get(row, col) {
+    return this.data[row * this.size + col];
+  }
+
+  xor(row, col, value) {
+    this.data[row * this.size + col] ^= value;
+  }
+
+  isReserved(row, col) {
+    return this.reservedBit[row * this.size + col];
+  }
+}
 
 const ECCode = {};
 
@@ -205,11 +160,9 @@ ECCode.getTotalCodewordsCount = function getTotalCodewordsCount(
   }
 };
 
-const GF = {};
-
 const EXP_TABLE = new Uint8Array(512);
 const LOG_TABLE = new Uint8Array(256);
-(function initTables() {
+{
   let x = 1;
   for (let i = 0; i < 255; i++) {
     EXP_TABLE[i] = x;
@@ -225,40 +178,38 @@ const LOG_TABLE = new Uint8Array(256);
   for (let i = 255; i < 512; i++) {
     EXP_TABLE[i] = EXP_TABLE[i - 255];
   }
-})();
+}
 
-GF.exp = function exp(n) {
+function gfExp(n) {
   return EXP_TABLE[n];
-};
+}
 
-GF.mul = function mul(x, y) {
+function gfMul(x, y) {
   if (x === 0 || y === 0) return 0;
 
   return EXP_TABLE[LOG_TABLE[x] + LOG_TABLE[y]];
-};
+}
 
-const Polynomial = {};
-
-Polynomial.mul = function mul(p1, p2) {
+function polyMul(p1, p2) {
   const coeff = new Uint8Array(p1.length + p2.length - 1);
 
   for (let i = 0; i < p1.length; i++) {
     for (let j = 0; j < p2.length; j++) {
-      coeff[i + j] ^= GF.mul(p1[i], p2[j]);
+      coeff[i + j] ^= gfMul(p1[i], p2[j]);
     }
   }
 
   return coeff;
-};
+}
 
-Polynomial.mod = function mod(divident, divisor) {
+function polyMod(divident, divisor) {
   let result = new Uint8Array(divident);
 
   while (result.length - divisor.length >= 0) {
     const coeff = result[0];
 
     for (let i = 0; i < divisor.length; i++) {
-      result[i] ^= GF.mul(divisor[i], coeff);
+      result[i] ^= gfMul(divisor[i], coeff);
     }
 
     let offset = 0;
@@ -267,49 +218,49 @@ Polynomial.mod = function mod(divident, divisor) {
   }
 
   return result;
-};
+}
 
-Polynomial.generateECPolynomial = function generateECPolynomial(degree) {
+function generateECPolynomial(degree) {
   let poly = new Uint8Array([1]);
   for (let i = 0; i < degree; i++) {
-    poly = Polynomial.mul(poly, new Uint8Array([1, GF.exp(i)]));
+    poly = polyMul(poly, new Uint8Array([1, gfExp(i)]));
   }
 
   return poly;
-};
-
-function ReedSolomonEncoder(degree) {
-  this.genPoly = undefined;
-  this.degree = degree;
-
-  if (this.degree) this.initialize(this.degree);
 }
 
-ReedSolomonEncoder.prototype.initialize = function initialize(degree) {
-  this.degree = degree;
-  this.genPoly = Polynomial.generateECPolynomial(this.degree);
-};
+class ReedSolomonEncoder {
+  constructor(degree) {
+    this.genPoly = undefined;
+    this.degree = degree;
 
-ReedSolomonEncoder.prototype.encode = function encode(data) {
-  if (!this.genPoly) {
-    throw new Error("Encoder not initialized");
+    if (this.degree) {
+      this.degree = degree;
+      this.genPoly = generateECPolynomial(this.degree);
+    }
   }
 
-  const paddedData = new Uint8Array(data.length + this.degree);
-  paddedData.set(data);
+  encode(data) {
+    if (!this.genPoly) {
+      throw new Error("Encoder not initialized");
+    }
 
-  const remainder = Polynomial.mod(paddedData, this.genPoly);
+    const paddedData = new Uint8Array(data.length + this.degree);
+    paddedData.set(data);
 
-  const start = this.degree - remainder.length;
-  if (start > 0) {
-    const buff = new Uint8Array(this.degree);
-    buff.set(remainder, start);
+    const remainder = polyMod(paddedData, this.genPoly);
 
-    return buff;
+    const start = this.degree - remainder.length;
+    if (start > 0) {
+      const buff = new Uint8Array(this.degree);
+      buff.set(remainder, start);
+
+      return buff;
+    }
+
+    return remainder;
   }
-
-  return remainder;
-};
+}
 
 function getCharCountIndicator(version) {
   if (version >= 1 && version < 10) return 8;
@@ -328,25 +279,14 @@ const G18 =
   (1 << 0);
 const G18_BCH = Utils.getBCHDigit(G18);
 
-function getBestVersionForData(segments, errorCorrectionLevel) {
-  let seg;
-
-  const ecl = ECLevel.from(errorCorrectionLevel, ECLevel.M);
-
-  if (Array.isArray(segments)) {
-    if (segments.length === 0) {
-      return 1;
-    }
-
-    seg = segments[0];
-  } else {
-    seg = segments;
-  }
-
+function getBestVersionForData(seg, errorCorrectionLevel) {
   for (let currentVersion = 1; currentVersion <= 40; currentVersion++) {
     const totalCodewords = Utils.getSymbolTotalCodewords(currentVersion);
 
-    const ecTotalCodewords = ECCode.getTotalCodewordsCount(currentVersion, ecl);
+    const ecTotalCodewords = ECCode.getTotalCodewordsCount(
+      currentVersion,
+      errorCorrectionLevel
+    );
 
     const dataTotalCodewordsBits = (totalCodewords - ecTotalCodewords) * 8;
 
@@ -368,31 +308,29 @@ const G15 =
 const G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
 const G15_BCH = Utils.getBCHDigit(G15);
 
-function ByteData(data) {
-  if (typeof data === "string") {
-    this.data = new TextEncoder().encode(data);
-  } else {
-    this.data = new Uint8Array(data);
+class ByteData {
+  constructor(data) {
+    if (typeof data === "string") {
+      this.data = new TextEncoder().encode(data);
+    } else {
+      this.data = new Uint8Array(data);
+    }
+  }
+
+  getLength() {
+    return this.data.length;
+  }
+
+  getBitsLength() {
+    return this.data.length * 8;
+  }
+
+  write(bitBuffer) {
+    for (let i = 0, l = this.data.length; i < l; i++) {
+      bitBuffer.put(this.data[i], 8);
+    }
   }
 }
-
-ByteData.getBitsLength = function getBitsLength(length) {
-  return length * 8;
-};
-
-ByteData.prototype.getLength = function getLength() {
-  return this.data.length;
-};
-
-ByteData.prototype.getBitsLength = function getBitsLength() {
-  return ByteData.getBitsLength(this.data.length);
-};
-
-ByteData.prototype.write = function (bitBuffer) {
-  for (let i = 0, l = this.data.length; i < l; i++) {
-    bitBuffer.put(this.data[i], 8);
-  }
-};
 
 function setupAlignmentPattern(matrix, version) {
   const coords = [];
@@ -555,16 +493,12 @@ function setupData(matrix, data) {
   }
 }
 
-function createData(version, errorCorrectionLevel, segments) {
+function createData(version, errorCorrectionLevel, segment) {
   const buffer = new BitBuffer();
 
-  segments.forEach(function (data) {
-    buffer.put(1 << 2, 4);
-
-    buffer.put(data.getLength(), getCharCountIndicator(version));
-
-    data.write(buffer);
-  });
+  buffer.put(4, 4);
+  buffer.put(segment.getLength(), getCharCountIndicator(version));
+  segment.write(buffer);
 
   const totalCodewords = Utils.getSymbolTotalCodewords(version);
   const ecTotalCodewords = ECCode.getTotalCodewordsCount(
@@ -652,10 +586,10 @@ function createCodewords(bitBuffer, version, errorCorrectionLevel) {
   return data;
 }
 
-function createSymbol(data, version, errorCorrectionLevel) {
-  let segments = [new ByteData(data)];
+export function createSymbol(data, version, errorCorrectionLevel = ECLevel.M) {
+  let segment = new ByteData(data);
 
-  const bestVersion = getBestVersionForData(segments, errorCorrectionLevel);
+  const bestVersion = getBestVersionForData(segment, errorCorrectionLevel);
 
   if (!bestVersion) {
     throw new Error("The amount of data is too big to be stored in a QR Code");
@@ -673,7 +607,7 @@ function createSymbol(data, version, errorCorrectionLevel) {
     );
   }
 
-  const dataBits = createData(version, errorCorrectionLevel, segments);
+  const dataBits = createData(version, errorCorrectionLevel, segment);
 
   const moduleCount = Utils.getSymbolSize(version);
   const modules = new BitMatrix(moduleCount);
@@ -739,7 +673,7 @@ function createSymbol(data, version, errorCorrectionLevel) {
     version: version,
     errorCorrectionLevel: errorCorrectionLevel,
     maskPattern: 2,
-    segments: segments,
+    segment: segment,
   };
 }
 
@@ -752,7 +686,7 @@ export function createQRCode(
     throw new Error("No input text");
   }
 
-  const symbol = createSymbol(input, undefined, ECLevel.M);
+  const symbol = createSymbol(input);
 
   let { data, size } = symbol.modules;
 
