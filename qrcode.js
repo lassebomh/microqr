@@ -1,15 +1,14 @@
 const Utils = {};
 
 const CODEWORDS_COUNT = [
-  0, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346, 404, 466, 532, 581, 655,
-  733, 815, 901, 991, 1085, 1156, 1258, 1364, 1474, 1588, 1706, 1828, 1921,
-  2051, 2185, 2323, 2465, 2611, 2761, 2876, 3034, 3196, 3362, 3532, 3706,
+  0, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346, 404, 466, 532, 581, 655, 733, 815, 901, 991,
+  1085, 1156, 1258, 1364, 1474, 1588, 1706, 1828, 1921, 2051, 2185, 2323, 2465, 2611, 2761, 2876,
+  3034, 3196, 3362, 3532, 3706,
 ];
 
 Utils.getSymbolSize = function getSymbolSize(version) {
   if (!version) throw new Error('"version" cannot be null or undefined');
-  if (version < 1 || version > 40)
-    throw new Error('"version" should be in range from 1 to 40');
+  if (version < 1 || version > 40) throw new Error('"version" should be in range from 1 to 40');
   return version * 4 + 17;
 };
 
@@ -101,28 +100,24 @@ class BitMatrix {
 const ECCode = {};
 
 const EC_BLOCKS_TABLE = [
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 2, 2, 4, 1, 2, 4, 4, 2, 4, 4, 4, 2, 4,
-  6, 5, 2, 4, 6, 6, 2, 5, 8, 8, 4, 5, 8, 8, 4, 5, 8, 11, 4, 8, 10, 11, 4, 9, 12,
-  16, 4, 9, 16, 16, 6, 10, 12, 18, 6, 10, 17, 16, 6, 11, 16, 19, 6, 13, 18, 21,
-  7, 14, 21, 25, 8, 16, 20, 25, 8, 17, 23, 25, 9, 17, 23, 34, 9, 18, 25, 30, 10,
-  20, 27, 32, 12, 21, 29, 35, 12, 23, 34, 37, 12, 25, 34, 40, 13, 26, 35, 42,
-  14, 28, 38, 45, 15, 29, 40, 48, 16, 31, 43, 51, 17, 33, 45, 54, 18, 35, 48,
-  57, 19, 37, 51, 60, 19, 38, 53, 63, 20, 40, 56, 66, 21, 43, 59, 70, 22, 45,
-  62, 74, 24, 47, 65, 77, 25, 49, 68, 81,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 2, 2, 4, 1, 2, 4, 4, 2, 4, 4, 4, 2, 4, 6, 5, 2, 4, 6, 6, 2,
+  5, 8, 8, 4, 5, 8, 8, 4, 5, 8, 11, 4, 8, 10, 11, 4, 9, 12, 16, 4, 9, 16, 16, 6, 10, 12, 18, 6, 10,
+  17, 16, 6, 11, 16, 19, 6, 13, 18, 21, 7, 14, 21, 25, 8, 16, 20, 25, 8, 17, 23, 25, 9, 17, 23, 34,
+  9, 18, 25, 30, 10, 20, 27, 32, 12, 21, 29, 35, 12, 23, 34, 37, 12, 25, 34, 40, 13, 26, 35, 42, 14,
+  28, 38, 45, 15, 29, 40, 48, 16, 31, 43, 51, 17, 33, 45, 54, 18, 35, 48, 57, 19, 37, 51, 60, 19,
+  38, 53, 63, 20, 40, 56, 66, 21, 43, 59, 70, 22, 45, 62, 74, 24, 47, 65, 77, 25, 49, 68, 81,
 ];
 
 const EC_CODEWORDS_TABLE = [
-  7, 10, 13, 17, 10, 16, 22, 28, 15, 26, 36, 44, 20, 36, 52, 64, 26, 48, 72, 88,
-  36, 64, 96, 112, 40, 72, 108, 130, 48, 88, 132, 156, 60, 110, 160, 192, 72,
-  130, 192, 224, 80, 150, 224, 264, 96, 176, 260, 308, 104, 198, 288, 352, 120,
-  216, 320, 384, 132, 240, 360, 432, 144, 280, 408, 480, 168, 308, 448, 532,
-  180, 338, 504, 588, 196, 364, 546, 650, 224, 416, 600, 700, 224, 442, 644,
-  750, 252, 476, 690, 816, 270, 504, 750, 900, 300, 560, 810, 960, 312, 588,
-  870, 1050, 336, 644, 952, 1110, 360, 700, 1020, 1200, 390, 728, 1050, 1260,
-  420, 784, 1140, 1350, 450, 812, 1200, 1440, 480, 868, 1290, 1530, 510, 924,
-  1350, 1620, 540, 980, 1440, 1710, 570, 1036, 1530, 1800, 570, 1064, 1590,
-  1890, 600, 1120, 1680, 1980, 630, 1204, 1770, 2100, 660, 1260, 1860, 2220,
-  720, 1316, 1950, 2310, 750, 1372, 2040, 2430,
+  7, 10, 13, 17, 10, 16, 22, 28, 15, 26, 36, 44, 20, 36, 52, 64, 26, 48, 72, 88, 36, 64, 96, 112,
+  40, 72, 108, 130, 48, 88, 132, 156, 60, 110, 160, 192, 72, 130, 192, 224, 80, 150, 224, 264, 96,
+  176, 260, 308, 104, 198, 288, 352, 120, 216, 320, 384, 132, 240, 360, 432, 144, 280, 408, 480,
+  168, 308, 448, 532, 180, 338, 504, 588, 196, 364, 546, 650, 224, 416, 600, 700, 224, 442, 644,
+  750, 252, 476, 690, 816, 270, 504, 750, 900, 300, 560, 810, 960, 312, 588, 870, 1050, 336, 644,
+  952, 1110, 360, 700, 1020, 1200, 390, 728, 1050, 1260, 420, 784, 1140, 1350, 450, 812, 1200, 1440,
+  480, 868, 1290, 1530, 510, 924, 1350, 1620, 540, 980, 1440, 1710, 570, 1036, 1530, 1800, 570,
+  1064, 1590, 1890, 600, 1120, 1680, 1980, 630, 1204, 1770, 2100, 660, 1260, 1860, 2220, 720, 1316,
+  1950, 2310, 750, 1372, 2040, 2430,
 ];
 
 ECCode.getBlocksCount = function getBlocksCount(version, errorCorrectionLevel) {
@@ -140,10 +135,7 @@ ECCode.getBlocksCount = function getBlocksCount(version, errorCorrectionLevel) {
   }
 };
 
-ECCode.getTotalCodewordsCount = function getTotalCodewordsCount(
-  version,
-  errorCorrectionLevel
-) {
+ECCode.getTotalCodewordsCount = function getTotalCodewordsCount(version, errorCorrectionLevel) {
   switch (errorCorrectionLevel) {
     case ECLevelL:
       return EC_CODEWORDS_TABLE[(version - 1) * 4 + 0];
@@ -267,29 +259,18 @@ function getCharCountIndicator(version) {
 }
 
 const G18 =
-  (1 << 12) |
-  (1 << 11) |
-  (1 << 10) |
-  (1 << 9) |
-  (1 << 8) |
-  (1 << 5) |
-  (1 << 2) |
-  (1 << 0);
+  (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0);
 const G18_BCH = Utils.getBCHDigit(G18);
 
 function getBestVersionForData(seg, errorCorrectionLevel) {
   for (let currentVersion = 1; currentVersion <= 40; currentVersion++) {
     const totalCodewords = Utils.getSymbolTotalCodewords(currentVersion);
 
-    const ecTotalCodewords = ECCode.getTotalCodewordsCount(
-      currentVersion,
-      errorCorrectionLevel
-    );
+    const ecTotalCodewords = ECCode.getTotalCodewordsCount(currentVersion, errorCorrectionLevel);
 
     const dataTotalCodewordsBits = (totalCodewords - ecTotalCodewords) * 8;
 
-    const usableBits =
-      dataTotalCodewordsBits - getCharCountIndicator(currentVersion) + 4;
+    const usableBits = dataTotalCodewordsBits - getCharCountIndicator(currentVersion) + 4;
 
     let capacity = Math.floor(usableBits / 8);
 
@@ -301,8 +282,7 @@ function getBestVersionForData(seg, errorCorrectionLevel) {
   return undefined;
 }
 
-const G15 =
-  (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);
+const G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);
 const G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
 const G15_BCH = Utils.getBCHDigit(G15);
 
@@ -340,8 +320,7 @@ function setupAlignmentPattern(matrix, version) {
   } else {
     const posCount = Math.floor(version / 7) + 2;
     const size = Utils.getSymbolSize(version);
-    const intervals =
-      size === 145 ? 26 : Math.ceil((size - 13) / (2 * posCount - 2)) * 2;
+    const intervals = size === 145 ? 26 : Math.ceil((size - 13) / (2 * posCount - 2)) * 2;
     const positions = [size - 7];
 
     for (let i = 1; i < posCount - 1; i++) {
@@ -375,13 +354,7 @@ function setupAlignmentPattern(matrix, version) {
 
     for (let r = -2; r <= 2; r++) {
       for (let c = -2; c <= 2; c++) {
-        if (
-          r === -2 ||
-          r === 2 ||
-          c === -2 ||
-          c === 2 ||
-          (r === 0 && c === 0)
-        ) {
+        if (r === -2 || r === 2 || c === -2 || c === 2 || (r === 0 && c === 0)) {
           matrix.set(row + r, col + c, true, true);
         } else {
           matrix.set(row + r, col + c, false, true);
@@ -499,10 +472,7 @@ function createData(version, errorCorrectionLevel, segment) {
   segment.write(buffer);
 
   const totalCodewords = Utils.getSymbolTotalCodewords(version);
-  const ecTotalCodewords = ECCode.getTotalCodewordsCount(
-    version,
-    errorCorrectionLevel
-  );
+  const ecTotalCodewords = ECCode.getTotalCodewordsCount(version, errorCorrectionLevel);
   const dataTotalCodewordsBits = (totalCodewords - ecTotalCodewords) * 8;
 
   if (buffer.getLengthInBits() + 4 <= dataTotalCodewordsBits) {
@@ -524,10 +494,7 @@ function createData(version, errorCorrectionLevel, segment) {
 function createCodewords(bitBuffer, version, errorCorrectionLevel) {
   const totalCodewords = Utils.getSymbolTotalCodewords(version);
 
-  const ecTotalCodewords = ECCode.getTotalCodewordsCount(
-    version,
-    errorCorrectionLevel
-  );
+  const ecTotalCodewords = ECCode.getTotalCodewordsCount(version, errorCorrectionLevel);
 
   const dataTotalCodewords = totalCodewords - ecTotalCodewords;
 
@@ -552,8 +519,7 @@ function createCodewords(bitBuffer, version, errorCorrectionLevel) {
   const buffer = new Uint8Array(bitBuffer.buffer);
 
   for (let b = 0; b < ecTotalBlocks; b++) {
-    const dataSize =
-      b < blocksInGroup1 ? dataCodewordsInGroup1 : dataCodewordsInGroup2;
+    const dataSize = b < blocksInGroup1 ? dataCodewordsInGroup1 : dataCodewordsInGroup2;
 
     dcData[b] = buffer.slice(offset, offset + dataSize);
 
@@ -720,11 +686,7 @@ export function createSymbolDataURL(symbol, col1, col0, border = 1) {
   return `data:image/bmp;base64,${btoa(String.fromCharCode.apply(null, bmp))}`;
 }
 
-export function createQRCode(
-  input,
-  col1 = [0x00, 0x00, 0x00],
-  col0 = [0xff, 0xff, 0xff]
-) {
+export function createQRCode(input, col1 = [0x00, 0x00, 0x00], col0 = [0xff, 0xff, 0xff]) {
   if (typeof input === "undefined" || input === "") {
     throw new Error("No input text");
   }
