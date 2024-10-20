@@ -27,10 +27,27 @@ Utils.getBCHDigit = function (data) {
   return digit;
 };
 
-const ECLevelL = { bit: 1 };
-const ECLevelM = { bit: 0 };
-const ECLevelQ = { bit: 3 };
-const ECLevelH = { bit: 2 };
+export const ECLevelL = { bit: 1 };
+export const ECLevelM = { bit: 0 };
+export const ECLevelQ = { bit: 3 };
+export const ECLevelH = { bit: 2 };
+
+function getECLevelFromString(input) {
+  switch (input.toLowerCase()) {
+    case "l":
+    case "low":
+      return ECLevelL;
+    case "m":
+    case "medium":
+      return ECLevelM;
+    case "q":
+    case "quartile":
+      return ECLevelQ;
+    case "h":
+    case "high":
+      return ECLevelL;
+  }
+}
 
 class BitBuffer {
   constructor() {
@@ -550,10 +567,28 @@ function createCodewords(bitBuffer, version, errorCorrectionLevel) {
   return data;
 }
 
-export function createSymbol(data, version, errorCorrectionLevel = ECLevelM) {
-  let segment = new ByteData(data);
+/**
+ * @typedef {{
+ *  modules: BitMatrix,
+ *  segment: BitBuffer,
+ *  version: number,
+ *  errorCorrectionLevel: {bit: number},
+ *  maskPattern: number;
+ * }} QRSymbol
+ */
 
-  const bestVersion = getBestVersionForData(segment, errorCorrectionLevel);
+/**
+ *
+ * @param {string} data
+ * @param {string} errorCorrectionLevel
+ * @param {number} version
+ * @returns {QRSymbol}
+ */
+export function createSymbol(data, errorCorrectionLevel = "m", version) {
+  let segment = new ByteData(data);
+  const ecLevel = getECLevelFromString(errorCorrectionLevel);
+
+  const bestVersion = getBestVersionForData(segment, ecLevel);
 
   if (!bestVersion) {
     throw new Error("The amount of data is too big to be stored in a QR Code");
@@ -571,8 +606,7 @@ export function createSymbol(data, version, errorCorrectionLevel = ECLevelM) {
     );
   }
 
-  const dataBits = createData(version, errorCorrectionLevel, segment);
-
+  const dataBits = createData(version, ecLevel, segment);
   const moduleCount = Utils.getSymbolSize(version);
   const modules = new BitMatrix(moduleCount);
 
@@ -615,7 +649,7 @@ export function createSymbol(data, version, errorCorrectionLevel = ECLevelM) {
 
   setupAlignmentPattern(modules, version);
 
-  setupFormatInfo(modules, errorCorrectionLevel);
+  setupFormatInfo(modules, ecLevel);
 
   if (version >= 7) {
     setupVersionInfo(modules, version);
@@ -633,12 +667,20 @@ export function createSymbol(data, version, errorCorrectionLevel = ECLevelM) {
   return {
     modules: modules,
     version: version,
-    errorCorrectionLevel: errorCorrectionLevel,
+    errorCorrectionLevel: ecLevel,
     maskPattern: 2,
     segment: segment,
   };
 }
 
+/**
+ *
+ * @param {QRSymbol} symbol
+ * @param {[number, number, number]} col1
+ * @param {[number, number, number]} col0
+ * @param {number} border
+ * @returns {string}
+ */
 export function createSymbolDataURL(symbol, col1, col0, border = 1) {
   let { data, size } = symbol.modules;
 
@@ -657,7 +699,6 @@ export function createSymbolDataURL(symbol, col1, col0, border = 1) {
   }
 
   const BYTES_PER_ROW = Math.ceil(size / 8 / 4) * 4;
-
   const HEADER_SIZE = 16;
   const PIXELS_OFFSET = HEADER_SIZE + 22;
 
@@ -686,6 +727,13 @@ export function createSymbolDataURL(symbol, col1, col0, border = 1) {
   return `data:image/bmp;base64,${btoa(String.fromCharCode.apply(null, bmp))}`;
 }
 
+/**
+ *
+ * @param {string} input
+ * @param {[number, number, number]} col1
+ * @param {[number, number, number]} col0
+ * @returns {string}
+ */
 export function createQRCode(input, col1 = [0x00, 0x00, 0x00], col0 = [0xff, 0xff, 0xff]) {
   if (typeof input === "undefined" || input === "") {
     throw new Error("No input text");

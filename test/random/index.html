@@ -23,11 +23,7 @@
     <img id="qrcode" />
   </body>
   <script type="module">
-    import {
-      createQRCode,
-      createSymbol,
-      createSymbolDataURL,
-    } from "../qrcode.js";
+    import { createQRCode, createSymbol, createSymbolDataURL } from "../../qrcode.js";
     import { getImageData, getRandomChars } from "./utils.js";
 
     const img = document.getElementById("qrcode");

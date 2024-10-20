@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <main>
+      <img class="qrcode" id="preview" />
+      <textarea id="input" rows="1"></textarea>
+      <a id="dataurl" download></a>
+    </main>
+  </body>
+
+  <script type="module">
+    import { createQRCode, createSymbol, createSymbolDataURL } from "../../qrcode.js";
+
+    /**
+     *
+     * @param {string[]} parts
+     * @param  {...HTMLElement} args
+     * @returns {HTMLElement[]}
+     */
+    export function $(parts, ...args) {
+      parts = [...parts];
+
+      let query = parts.shift();
+
+      for (const arg of args) {
+        if (arg instanceof HTMLElement) {
+          if (arg.id === "") id = Math.random().toString(16).substring(2);
+          query += "#" + arg.id + parts.shift();
+        } else {
+          query += arg + parts.shift();
+        }
+      }
+
+      return [...document.querySelectorAll(query)];
+    }
+    const [dataurl] = $`#dataurl`;
+    const [preview] = $`#preview`;
+    preview.style.imageRendering = "pixelated";
+
+    const [input] = $`#input`;
+
+    input.value = window.location.href;
+
+    function updateQRCode() {
+      if (input.value.length) {
+        const symbol = createSymbol(input.value, "low");
+        console.log(symbol);
+
+        const url = createSymbolDataURL(symbol, [0, 0, 0], [255, 255, 255], 1);
+        dataurl.href = url;
+        dataurl.innerText = url;
+        preview.src = url;
+      }
+    }
+
+    input.addEventListener("input", () => {
+      updateQRCode();
+    });
+
+    updateQRCode();
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+
+      background-color: #333;
+      font-size: 20px;
+      font-family: Arial, Helvetica, sans-serif;
+      color: white;
+    }
+    img.qrcode {
+      image-rendering: pixelated;
+      aspect-ratio: 1;
+    }
+    * {
+      box-sizing: border-box;
+    }
+
+    main {
+      width: 80vmin;
+      max-width: 600px;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 1em;
+    }
+
+    #dataurl {
+      color: #00a2ff;
+      font-size: 16px;
+      font-family: monospace;
+      word-break: break-all;
+      text-decoration: none;
+    }
+
+    #input {
+      width: 100%;
+      background: #ffffff09;
+      border-radius: 8px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: inherit;
+      color: inherit;
+      padding: 0.5em 0.5em;
+    }
+
+    #preview {
+      border-radius: 8px;
+      width: 100%;
+      background-color: white;
+    }
+
+    .dragging #preview {
+      outline: 5px dashed #00a2ff;
+    }
+    #preview.drag-over {
+      opacity: 0.5;
+    }
+
+    #input:focus {
+      outline: 2px solid #00a2ff;
+    }
+  </style>
+</html>

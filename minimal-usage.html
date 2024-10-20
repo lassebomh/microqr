@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minimal Usage</title>
+  </head>
+  <body>
+    <img class="qrcode" width="400" height="400" />
+  </body>
+  <script type="module">
+    import { createQRCode } from "./qrcode.js";
+
+    const img = document.getElementsByClassName("qrcode")[0];
+    img.src = createQRCode("https://google.com");
+  </script>
+  <style>
+    .qrcode {
+      image-rendering: pixelated;
+    }
+  </style>
+</html>
